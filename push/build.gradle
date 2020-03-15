@@ -1,0 +1,56 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles 'consumer-rules.pro'
+
+        // 配置渠道小米、华为、魅族
+        manifestPlaceholders = [
+                APP_ID       : "cn.wildfirechat.chat",
+
+                MI_APP_ID    : "2882303761517722456",
+                MI_APP_KEY   : "5731772292456",
+
+                HMS_APP_ID   : "100221325",
+
+                MEIZU_APP_ID : "113616",
+                MEIZU_APP_KEY: "fcd886f51c144b45b87a67a28e2934d1"
+        ]
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation files('libs/MiPush_SDK_Client_3_6_9.jar')
+
+
+    // 集成推送模块
+    implementation 'com.huawei.android.hms:push:2.5.3.305'
+    implementation 'com.huawei.android.hms:base:2.5.3.305'
+    implementation 'com.meizu.flyme.internet:push-internal:3.4.2@aar'
+    implementation project(path: ':client')
+
+
+}

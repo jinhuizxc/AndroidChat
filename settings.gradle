@@ -1,0 +1,4 @@
+rootProject.name='AndroidChat'
+include ':chat', ':mars-core-release', ':imagepicker', ':emojilibrary', ':avenginekit'
+include ':push'
+include ':client'

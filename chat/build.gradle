@@ -1,0 +1,119 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 29
+    buildToolsVersion "29.0.3"
+
+    defaultConfig {
+        applicationId "cn.wildfirechat.chat"
+        minSdkVersion 16
+        targetSdkVersion 29
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        multiDexEnabled true
+        javaCompileOptions {
+            annotationProcessorOptions {
+                includeCompileClasspath true
+            }
+        }
+
+        manifestPlaceholders = [
+                APP_ID       : "cn.wildfirechat.chat",
+
+                MI_APP_ID    : "2882303761517722456",
+                MI_APP_KEY   : "5731772292456",
+
+                HMS_APP_ID   : "100221325",
+
+                MEIZU_APP_ID : "113616",
+                MEIZU_APP_KEY: "fcd886f51c144b45b87a67a28e2934d1"
+        ]
+
+        // 支持的架构
+        ndk {
+            abiFilters "armeabi-v7a", 'x86' // ，'armeabi', 'arm64-v8a', 'x86', 'x86_64'
+        }
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // 引用资源
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+            res.srcDirs = ['src/main/res', 'src/main/res-av']
+        }
+    }
+
+    repositories { flatDir { dirs 'libs' } }
+
+    compileOptions {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation files('libs/joda-time-2.5.jar')
+    implementation files('libs/joda-time-2.5-sources.jar')
+    implementation files('libs/pinyin4j-2.5.0.jar')
+    implementation files('libs/TencentLocationSDK_v4.9.7.12_r247861_161205_1104.jar')
+    implementation files('libs/TencentMapSDK_Raster_v_1.2.7_51ae0e7.jar')
+    implementation files('libs/TencentSearch1.1.3.jar')
+
+
+    // 引入第三方库
+    implementation 'com.lqr.adapter:library:1.0.2'
+    implementation 'com.lqr.optionitemview:library:1.0.7'
+    implementation 'cjt.library.wheel:camera:1.1.9'
+    implementation 'com.jaeger.statusbaruitl:library:1.3.5'
+    implementation 'com.kyleduo.switchbutton:library:1.4.4'
+    implementation 'com.lovedise:permissiongen:0.0.6'
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.3.1'
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'com.squareup.okio:okio:1.14.0'
+    implementation 'com.jakewharton:butterknife:7.0.1'
+    implementation 'com.github.bumptech.glide:glide:4.8.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.8.0'
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'org.webrtc:google-webrtc:1.0.21929'
+    implementation 'com.afollestad.material-dialogs:core:0.9.6.0'
+    implementation 'q.rorbin:badgeview:1.1.3'
+    implementation 'com.google.code.gson:gson:2.8.2'
+
+    // ViewModel and LiveData
+    def lifecycle_version = '2.0.0-beta01'
+    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+
+    implementation 'com.tencent.bugly:crashreport:2.8.6.0'
+    implementation 'com.tencent.bugly:nativecrashreport:3.6.0.1'
+
+    implementation 'com.king.zxing:zxing-lite:1.0.6'
+    api 'com.google.zxing:core:3.3.3'
+    implementation project(path: ':imagepicker')
+    implementation project(path: ':emojilibrary')
+    implementation project(path: ':client')
+    implementation project(path: ':push')
+    implementation project(':avenginekit')
+
+    // logger
+    implementation 'com.orhanobut:logger:2.2.0'
+
+}
