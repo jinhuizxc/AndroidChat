@@ -72,7 +72,7 @@ public class SplashActivity extends AppCompatActivity {
 
         hideStatusBar();
 
-        SharedPreferences sp = SpUtil.getInstance().getConfig();
+        SharedPreferences sharedPreferences = SpUtil.getInstance().getConfig();
         id = sharedPreferences.getString("id", null);
         token = sharedPreferences.getString("token", null);
 

@@ -36,7 +36,7 @@ import cn.wildfirechat.remote.OnRecallMessageListener;
 import cn.wildfirechat.remote.OnReceiveMessageListener;
 
 /**
- * AVEngineKit： 影音引擎套件
+ * 客户端的初始化等配置类
  */
 public class WfcUIKit
         implements AVEngineKit.AVEngineCallback, OnReceiveMessageListener, OnRecallMessageListener {
@@ -80,12 +80,17 @@ public class WfcUIKit
         ChatManager.init(application, Config.IM_SERVER_HOST, Config.IM_SERVER_PORT);
         try {
             ChatManagerHolder.gChatManager = ChatManager.Instance();
+            // 启动日志
             ChatManagerHolder.gChatManager.startLog();
+            // 添加消息回调的监听
             ChatManagerHolder.gChatManager.addOnReceiveMessageListener(this);
+            // 添加召回消息监听器
             ChatManagerHolder.gChatManager.addRecallMessageListener(this);
+            // 初始化推送服务
             PushService.init(application);
 
             ringPlayer = new AsyncPlayer(null);
+            // 初始化影音引擎套件、 人家公司自己写的一套引擎
             AVEngineKit.init(application, this);
             ChatManagerHolder.gAVEngine = AVEngineKit.Instance();
             ChatManagerHolder.gAVEngine.addIceServer(Config.ICE_ADDRESS, Config.ICE_USERNAME, Config.ICE_PASSWORD);

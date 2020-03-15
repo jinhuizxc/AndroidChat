@@ -19,6 +19,7 @@ public class SettingActivity extends WfcBaseActivity {
 
     @OnClick(R.id.exitOptionItemView)
     void exit() {
+        // 退出登录, 断开连接
         ChatManagerHolder.gChatManager.disconnect(true);
         SharedPreferences sp = getSharedPreferences("config", Context.MODE_PRIVATE);
         sp.edit().clear().apply();

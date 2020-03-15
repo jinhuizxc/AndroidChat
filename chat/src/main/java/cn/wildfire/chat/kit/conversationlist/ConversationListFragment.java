@@ -28,12 +28,18 @@ import cn.wildfirechat.model.Conversation;
 import cn.wildfirechat.model.ConversationInfo;
 import cn.wildfirechat.model.UserInfo;
 
+/**
+ * 会话列表
+ */
 public class ConversationListFragment extends Fragment {
+
     private RecyclerView recyclerView;
     private ConversationListAdapter adapter;
+
     private static final List<Conversation.ConversationType> types = Arrays.asList(Conversation.ConversationType.Single,
             Conversation.ConversationType.Group,
             Conversation.ConversationType.Channel);
+
     private static final List<Integer> lines = Arrays.asList(0);
 
     private ConversationListViewModel conversationListViewModel;

@@ -10,6 +10,7 @@
 
 package cn.wildfire.chat.kit.voip;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -39,7 +40,9 @@ import cn.wildfirechat.client.NotInitializedExecption;
  * Activity for peer connection call setup, call waiting
  * and call view.
  */
-public class SingleVoipCallActivity extends FragmentActivity implements AVEngineKit.CallSessionCallback {
+public class SingleVoipCallActivity extends FragmentActivity
+        implements AVEngineKit.CallSessionCallback {
+
     private static final String TAG = "P2PVideoActivity";
 
     public static final String EXTRA_TARGET = "TARGET";
@@ -62,6 +65,7 @@ public class SingleVoipCallActivity extends FragmentActivity implements AVEngine
     private boolean isFromFloatingView;
     private Handler handler = new Handler();
 
+    @SuppressLint("InvalidWakeLockTag")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

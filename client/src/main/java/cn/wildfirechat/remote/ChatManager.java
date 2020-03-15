@@ -1100,7 +1100,6 @@ public class ChatManager {
                         .putString("userId", userId)
                         .putString("token", token)
                         .apply();
-                ;
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
@@ -2862,6 +2861,10 @@ public class ChatManager {
     }
 
 
+    /**
+     * 启动并绑定远程ClientService
+     * @return
+     */
     private boolean checkRemoteService() {
         if (INST != null) {
             if (mClient != null) {
@@ -2887,6 +2890,7 @@ public class ChatManager {
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             mClient = IRemoteClient.Stub.asInterface(iBinder);
             try {
+                // 设置服务域名、端口
                 mClient.setServerAddress(SERVER_HOST, SERVER_PORT);
                 for (String msgName : msgList) {
                     mClient.registerMessageContent(msgName);

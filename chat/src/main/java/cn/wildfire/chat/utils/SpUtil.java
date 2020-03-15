@@ -35,6 +35,10 @@ public class SpUtil {
                 .apply();
     }
 
+    /**
+     * 获取用户config信息
+     * @return
+     */
     public SharedPreferences getConfig() {
         SharedPreferences sharedPreferences = BaseApp.getContext().getSharedPreferences("config", Context.MODE_PRIVATE);
         return sharedPreferences;

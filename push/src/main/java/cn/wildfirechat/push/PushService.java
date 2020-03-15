@@ -30,6 +30,8 @@ import cn.wildfirechat.remote.ChatManager;
 
 /**
  * Created by heavyrain.lee on 2018/2/26.
+ *
+ * 推送服务
  */
 
 public class PushService {

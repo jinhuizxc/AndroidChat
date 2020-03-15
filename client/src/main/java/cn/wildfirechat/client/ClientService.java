@@ -102,6 +102,15 @@ import static com.tencent.mars.comm.PlatformComm.context;
 
 /**
  * Created by heavyrain lee on 2017/11/19.
+ *
+ * 客户端的服务类
+ *
+ * 腾讯的mars-core里面的类
+ * SdtLogic：
+ * AppLogic：
+ * ProtoLogic：
+ * Xlog：
+ * Log：
  */
 
 public class ClientService extends Service implements SdtLogic.ICallBack,
@@ -114,31 +123,47 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         ProtoLogic.IFriendListUpdateCallback,
         ProtoLogic.IGroupInfoUpdateCallback,
         ProtoLogic.IChannelInfoUpdateCallback, ProtoLogic.IGroupMembersUpdateCallback {
+
+    // 内容映射器
     private Map<Integer, Class<? extends MessageContent>> contentMapper = new HashMap<>();
 
+    // 连接状态
     private int mConnectionStatus;
+    // 备份设备令牌
     private String mBackupDeviceToken;
+    // 备份推送类型
     private int mBackupPushType;
-
+    // 是否已登录
     private boolean logined;
+    // 用户id
     private String userId;
+    // 接受消息的监听器
     private RemoteCallbackList<IOnReceiveMessageListener> onReceiveMessageListeners = new WfcRemoteCallbackList<>();
-    private RemoteCallbackList<IOnConnectionStatusChangeListener> onConnectionStatusChangeListenes = new WfcRemoteCallbackList<>();
+    // 消息状态改变监听器
+    private RemoteCallbackList<IOnConnectionStatusChangeListener> onConnectionStatusChangeListeners = new WfcRemoteCallbackList<>();
+    // 好友更新监听器
     private RemoteCallbackList<IOnFriendUpdateListener> onFriendUpdateListenerRemoteCallbackList = new WfcRemoteCallbackList<>();
+    // 好友用户信息更新监听器
     private RemoteCallbackList<IOnUserInfoUpdateListener> onUserInfoUpdateListenerRemoteCallbackList = new WfcRemoteCallbackList<>();
+    // 群组信息更新远程回调列表
     private RemoteCallbackList<IOnGroupInfoUpdateListener> onGroupInfoUpdateListenerRemoteCallbackList = new WfcRemoteCallbackList<>();
+    // 设置更新监听远程回调列表
     private RemoteCallbackList<IOnSettingUpdateListener> onSettingUpdateListenerRemoteCallbackList = new WfcRemoteCallbackList<>();
+    // 渠道信息更新监听回调列表
     private RemoteCallbackList<IOnChannelInfoUpdateListener> onChannelInfoUpdateListenerRemoteCallbackList = new WfcRemoteCallbackList<>();
+    // 群组成员更新回调列表
     private RemoteCallbackList<IOnGroupMembersUpdateListener> onGroupMembersUpdateListenerRemoteCallbackList = new WfcRemoteCallbackList<>();
 
+    // tencent mars用户信息
     private AppLogic.AccountInfo accountInfo = new AppLogic.AccountInfo();
     //        public final String DEVICE_NAME = android.os.Build.MANUFACTURER + "-" + android.os.Build.MODEL;
     public String DEVICE_TYPE = "Android";//"android-" + android.os.Build.VERSION.SDK_INT;
+    // 设备info
     private AppLogic.DeviceInfo info;
 
     private int clientVersion = 200;
     private static final String TAG = "ClientService";
-
+    // 连接接收器
     private BaseEvent.ConnectionReceiver mConnectionReceiver;
 
     private class ClientServiceStub extends IRemoteClient.Stub {
@@ -158,7 +183,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
 
             logined = true;
             accountInfo.userName = userName;
-
+            // 连接状态未连接
             mConnectionStatus = ConnectionStatusUnconnected;
             userId = userName;
             ProtoLogic.setConnectionStatusCallback(ClientService.this);
@@ -166,6 +191,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
 
             ProtoLogic.setAuthInfo(userName, userPwd);
 
+            // 动态注册连接接收器
             if (mConnectionReceiver == null) {
                 mConnectionReceiver = new BaseEvent.ConnectionReceiver();
                 IntentFilter filter = new IntentFilter();
@@ -173,6 +199,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
                 registerReceiver(mConnectionReceiver, filter);
             }
 
+            // mars-core连接域名、端口
             ProtoLogic.connect(mHost, mPort);
         }
 
@@ -183,7 +210,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
 
         @Override
         public void setOnConnectionStatusChangeListener(IOnConnectionStatusChangeListener listener) throws RemoteException {
-            onConnectionStatusChangeListenes.register(listener);
+            onConnectionStatusChangeListeners.register(listener);
         }
 
 
@@ -228,6 +255,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
 //            if (mars::stn::getConnectionStatus() != mars::stn::kConnectionStatusConnected && mars::stn::getConnectionStatus() != mars::stn::kConnectionStatusReceiveing) {
 //                [self destroyMars];
 //            }
+            // 注销连接接收器
             if (mConnectionReceiver != null) {
                 unregisterReceiver(mConnectionReceiver);
                 mConnectionReceiver = null;
@@ -241,11 +269,13 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
 
         @Override
         public void setForeground(int isForeground) throws RemoteException {
+            // 设置在前台
             BaseEvent.onForeground(isForeground == 1);
         }
 
         @Override
         public void onNetworkChange() {
+            // 网络状态改变
             BaseEvent.onNetworkChange();
         }
 
@@ -258,6 +288,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         @Override
         public void registerMessageContent(String msgContentCls) throws RemoteException {
             try {
+                // 通过反射获取类
                 Class cls = Class.forName(msgContentCls);
                 ContentTag tag = (ContentTag) cls.getAnnotation(ContentTag.class);
                 if (tag != null) {
@@ -275,7 +306,12 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             }
         }
 
-        private ProtoMessage convertMessage(cn.wildfirechat.message.Message msg) {
+        /**
+         * TODO 转换消息
+         * @param msg
+         * @return
+         */
+        private ProtoMessage convertMessage(Message msg) {
             ProtoMessage protoMessage = new ProtoMessage();
 
             msg.sender = accountInfo.userName;
@@ -302,6 +338,13 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return protoMessage;
         }
 
+        /**
+         * 发送消息
+         * @param msg
+         * @param callback
+         * @param expireDuration
+         * @throws RemoteException
+         */
         @Override
         public void send(cn.wildfirechat.message.Message msg, final ISendMessageCallback callback, int expireDuration) throws RemoteException {
 
@@ -440,13 +483,26 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return convertProtoMessage(ProtoLogic.getMessageByUid(messageUid));
         }
 
+        /**
+         * 插入消息
+         * @param message
+         * @param notify
+         * @return
+         * @throws RemoteException
+         */
         @Override
-        public cn.wildfirechat.message.Message insertMessage(cn.wildfirechat.message.Message message, boolean notify) throws RemoteException {
+        public Message insertMessage(Message message, boolean notify) throws RemoteException {
             ProtoMessage protoMessage = convertMessage(message);
             message.messageId = ProtoLogic.insertMessage(protoMessage);
             return message;
         }
 
+        /**
+         * 更新消息
+         * @param message
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public boolean updateMessage(cn.wildfirechat.message.Message message) throws RemoteException {
             ProtoMessage protoMessage = convertMessage(message);
@@ -454,26 +510,56 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return false;
         }
 
+        /**
+         * 获取未读数
+         * @param conversationType
+         * @param target
+         * @param line
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public UnreadCount getUnreadCount(int conversationType, String target, int line) throws RemoteException {
             return new UnreadCount(ProtoLogic.getUnreadCount(conversationType, target, line));
         }
 
+        /**
+         * 获取未读计数
+         * @param conversationTypes
+         * @param lines
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public UnreadCount getUnreadCountEx(int[] conversationTypes, int[] lines) throws RemoteException {
             return new UnreadCount(ProtoLogic.getUnreadCountEx(conversationTypes, lines));
         }
 
+        /**
+         * 清空未读状态
+         * @param conversationType
+         * @param target
+         * @param line
+         * @throws RemoteException
+         */
         @Override
         public void clearUnreadStatus(int conversationType, String target, int line) throws RemoteException {
             ProtoLogic.clearUnreadStatus(conversationType, target, line);
         }
 
+        /**
+         * 清空所有未读状态
+         * @throws RemoteException
+         */
         @Override
         public void clearAllUnreadStatus() throws RemoteException {
             ProtoLogic.clearAllUnreadStatus();
         }
 
+        /**
+         * 设置播放媒体消息
+         * @param messageId
+         */
         @Override
         public void setMediaMessagePlayed(long messageId) {
             try {
@@ -487,26 +573,64 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             }
         }
 
+        /**
+         * 移除会话
+         * @param conversationType
+         * @param target
+         * @param line
+         * @param clearMsg
+         * @throws RemoteException
+         */
         @Override
         public void removeConversation(int conversationType, String target, int line, boolean clearMsg) throws RemoteException {
             ProtoLogic.removeConversation(conversationType, target, line, clearMsg);
         }
 
+        /**
+         * 设置会话置顶
+         * @param conversationType
+         * @param target
+         * @param line
+         * @param top
+         * @throws RemoteException
+         */
         @Override
         public void setConversationTop(int conversationType, String target, int line, boolean top) throws RemoteException {
             setUserSetting(ConversationTop, conversationType + "-" + line + "-" + target, top ? "1" : "0", null);
         }
 
+        /**
+         * 设定对话稿
+         * @param conversationType
+         * @param target
+         * @param line
+         * @param draft
+         * @throws RemoteException
+         */
         @Override
         public void setConversationDraft(int conversationType, String target, int line, String draft) throws RemoteException {
             ProtoLogic.setConversationDraft(conversationType, target, line, draft);
         }
 
+        /**
+         * 设置对话静音
+         * @param conversationType
+         * @param target
+         * @param line
+         * @param silent
+         * @throws RemoteException
+         */
         @Override
         public void setConversationSilent(int conversationType, String target, int line, boolean silent) throws RemoteException {
             setUserSetting(ConversationSilent, conversationType + "-" + line + "-" + target, silent ? "1" : "0", null);
         }
 
+        /**
+         * 查询用户
+         * @param keyword
+         * @param callback
+         * @throws RemoteException
+         */
         @Override
         public void searchUser(String keyword, final ISearchUserCallback callback) throws RemoteException {
             ProtoLogic.searchUser(keyword, new ProtoLogic.ISearchUserCallback() {
@@ -536,11 +660,23 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        /**
+         * 是否为我的好友
+         * @param userId
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public boolean isMyFriend(String userId) throws RemoteException {
             return ProtoLogic.isMyFriend(userId);
         }
 
+        /**
+         * 获取我的好友列表
+         * @param refresh
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public List<String> getMyFriendList(boolean refresh) throws RemoteException {
             List<String> out = new ArrayList<>();
@@ -553,11 +689,23 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return out;
         }
 
+        /**
+         * 被列入黑名单
+         * @param userId
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public boolean isBlackListed(String userId) throws RemoteException {
             return ProtoLogic.isBlackListed(userId);
         }
 
+        /**
+         * 获取黑名单列表
+         * @param refresh
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public List<String> getBlackList(boolean refresh) throws RemoteException {
             List<String> out = new ArrayList<>();
@@ -570,6 +718,12 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return out;
         }
 
+        /**
+         * 获取我的好友列表信息
+         * @param refresh
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public List<UserInfo> getMyFriendListInfo(boolean refresh) throws RemoteException {
             List<String> users = getMyFriendList(refresh);
@@ -586,21 +740,41 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return userInfos;
         }
 
+        /**
+         * 从远程加载好友列表请求
+         * @throws RemoteException
+         */
         @Override
         public void loadFriendRequestFromRemote() throws RemoteException {
             ProtoLogic.loadFriendRequestFromRemote();
         }
 
+        /**
+         * 获取用户设置
+         * @param scope
+         * @param key
+         * @return
+         * @throws RemoteException
+         */
         @Override
         public String getUserSetting(int scope, String key) throws RemoteException {
             return ProtoLogic.getUserSetting(scope, key);
         }
 
+        // 获取用户设置
         @Override
         public Map<String, String> getUserSettings(int scope) throws RemoteException {
             return ProtoLogic.getUserSettings(scope);
         }
 
+        /**
+         * 设置用户设置
+         * @param scope
+         * @param key
+         * @param value
+         * @param callback
+         * @throws RemoteException
+         */
         @Override
         public void setUserSetting(int scope, String key, String value, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.setUserSetting(scope, key, value, new ProtoLogic.IGeneralCallback() {
@@ -627,16 +801,19 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 启动日志
         @Override
         public void startLog() throws RemoteException {
             Xlog.setConsoleLogOpen(true);
         }
 
+        // 停止日志
         @Override
         public void stopLog() throws RemoteException {
             Xlog.setConsoleLogOpen(false);
         }
 
+        // 设置设备令牌
         @Override
         public void setDeviceToken(String token, int pushType) throws RemoteException {
             if (TextUtils.isEmpty(token)) {
@@ -653,6 +830,11 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             mBackupDeviceToken = null;
         }
 
+        /**
+         * 转换Proto 好友请求
+         * @param protoRequest
+         * @return
+         */
         private FriendRequest convertProtoFriendRequest(ProtoFriendRequest protoRequest) {
             FriendRequest request = new FriendRequest();
 
@@ -666,6 +848,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return request;
         }
 
+        // 获取好友请求
         @Override
         public List<FriendRequest> getFriendRequest(boolean incomming) throws RemoteException {
             List<FriendRequest> out = new ArrayList<>();
@@ -678,16 +861,19 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return out;
         }
 
+        // 清除未读好友请求状态
         @Override
         public void clearUnreadFriendRequestStatus() throws RemoteException {
             ProtoLogic.clearUnreadFriendRequestStatus();
         }
 
+        // 获取未读好友请求状态
         @Override
         public int getUnreadFriendRequestStatus() throws RemoteException {
             return ProtoLogic.getUnreadFriendRequestStatus();
         }
 
+        // 删除朋友
         @Override
         public void removeFriend(String userId, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.removeFriend(userId, new ProtoLogic.IGeneralCallback() {
@@ -711,6 +897,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 发送朋友请求
         @Override
         public void sendFriendRequest(String userId, String reason, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.sendFriendRequest(userId, reason, new ProtoLogic.IGeneralCallback() {
@@ -734,6 +921,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 处理朋友请求
         @Override
         public void handleFriendRequest(String userId, boolean accept, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.handleFriendRequest(userId, accept, new ProtoLogic.IGeneralCallback() {
@@ -757,6 +945,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 设置黑名单
         @Override
         public void setBlackList(String userId, boolean isBlacked, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.setBlackList(userId, isBlacked, new ProtoLogic.IGeneralCallback() {
@@ -780,6 +969,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 加入聊天室
         @Override
         public void joinChatRoom(String chatRoomId, IGeneralCallback callback) throws RemoteException {
             ProtoLogic.joinChatRoom(chatRoomId, new ProtoLogic.IGeneralCallback() {
@@ -803,6 +993,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 退出聊天室
         @Override
         public void quitChatRoom(String chatRoomId, IGeneralCallback callback) throws RemoteException {
             ProtoLogic.quitChatRoom(chatRoomId, new ProtoLogic.IGeneralCallback() {
@@ -827,6 +1018,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
 
         }
 
+        // 获取聊天室信息
         @Override
         public void getChatRoomInfo(String chatRoomId, long updateDt, IGetChatRoomInfoCallback callback) throws RemoteException {
             ProtoLogic.getChatRoomInfo(chatRoomId, updateDt, new ProtoLogic.IGetChatRoomInfoCallback() {
@@ -851,6 +1043,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 获取聊天室成员信息
         @Override
         public void getChatRoomMembersInfo(String chatRoomId, int maxCount, IGetChatRoomMembersInfoCallback callback) throws RemoteException {
             ProtoLogic.getChatRoomMembersInfo(chatRoomId, maxCount, new ProtoLogic.IGetChatRoomMembersInfoCallback() {
@@ -874,7 +1067,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
-
+        // 删除朋友
         @Override
         public void deleteFriend(String userId, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.deleteFriend(userId, new ProtoLogic.IGeneralCallback() {
@@ -898,17 +1091,20 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 获取组信息
         @Override
         public GroupInfo getGroupInfo(String groupId, boolean refresh) throws RemoteException {
             ProtoGroupInfo protoGroupInfo = ProtoLogic.getGroupInfo(groupId, refresh);
             return convertProtoGroupInfo(protoGroupInfo);
         }
 
+        // 获取用户信息
         @Override
         public UserInfo getUserInfo(String userId, boolean refresh) throws RemoteException {
             return convertProtoUserInfo(ProtoLogic.getUserInfo(userId, refresh));
         }
 
+        // 获取用户信息, 列表
         @Override
         public List<UserInfo> getUserInfos(List<String> userIds) throws RemoteException {
             List<UserInfo> userInfos = new ArrayList<>();
@@ -923,6 +1119,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return userInfos;
         }
 
+        // 上传媒体
         @Override
         public void uploadMedia(byte[] data, int mediaType, final IUploadMediaCallback callback) throws RemoteException {
             ProtoLogic.uploadMedia(data, mediaType, new ProtoLogic.IUploadMediaCallback() {
@@ -951,6 +1148,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 修改我的信息
         @Override
         public void modifyMyInfo(List<ModifyMyInfoEntry> values, final IGeneralCallback callback) throws RemoteException {
             Map<Integer, String> protoValues = new HashMap<>();
@@ -979,11 +1177,13 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 删除留言
         @Override
         public boolean deleteMessage(long messageId) throws RemoteException {
             return ProtoLogic.deleteMessage(messageId);
         }
 
+        // 搜索对话
         @Override
         public List<ConversationSearchResult> searchConversation(String keyword, int[] conversationTypes, int[] lines) throws RemoteException {
             ProtoConversationSearchresult[] protoResults = ProtoLogic.searchConversation(keyword, conversationTypes, lines);
@@ -1007,6 +1207,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return output;
         }
 
+        // 搜索留言
         @Override
         public List<cn.wildfirechat.message.Message> searchMessage(Conversation conversation, String keyword) throws RemoteException {
             ProtoMessage[] protoMessages = ProtoLogic.searchMessage(conversation.type.getValue(), conversation.target, conversation.line, keyword);
@@ -1025,6 +1226,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         }
 
 
+        // 搜索组
         @Override
         public List<GroupSearchResult> searchGroups(String keyword) throws RemoteException {
             ProtoGroupSearchResult[] protoResults = ProtoLogic.searchGroups(keyword);
@@ -1043,6 +1245,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return output;
         }
 
+        // 搜索好友
         @Override
         public List<UserInfo> searchFriends(String keyworkd) throws RemoteException {
             ProtoUserInfo[] protoUserInfos = ProtoLogic.searchFriends(keyworkd);
@@ -1055,6 +1258,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return out;
         }
 
+        // 创建群组
         @Override
         public void createGroup(String groupId, String groupName, String groupPortrait, List<String> memberIds, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback2 callback) throws RemoteException {
             String[] memberArray = new String[memberIds.size()];
@@ -1082,6 +1286,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 添加组成员
         @Override
         public void addGroupMembers(String groupId, List<String> memberIds, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback callback) throws RemoteException {
             String[] memberArray = new String[memberIds.size()];
@@ -1109,6 +1314,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 删除组成员
         @Override
         public void removeGroupMembers(String groupId, List<String> memberIds, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback callback) throws RemoteException {
             String[] memberArray = new String[memberIds.size()];
@@ -1136,6 +1342,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 退出组
         @Override
         public void quitGroup(String groupId, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.quitGroup(groupId, notifyLines, notifyMsg.toProtoContent(), new ProtoLogic.IGeneralCallback() {
@@ -1159,6 +1366,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 解雇小组
         @Override
         public void dismissGroup(String groupId, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.dismissGroup(groupId, notifyLines, notifyMsg.toProtoContent(), new ProtoLogic.IGeneralCallback() {
@@ -1182,6 +1390,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 修改组信息
         @Override
         public void modifyGroupInfo(String groupId, int modifyType, String newValue, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.modifyGroupInfo(groupId, modifyType, newValue, notifyLines, notifyMsg == null ? null : notifyMsg.toProtoContent(), new ProtoLogic.IGeneralCallback() {
@@ -1205,6 +1414,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 修改组别名
         @Override
         public void modifyGroupAlias(String groupId, String newAlias, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.modifyGroupAlias(groupId, newAlias, notifyLines, notifyMsg.toProtoContent(), new ProtoLogic.IGeneralCallback() {
@@ -1228,6 +1438,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 获取小组成员 列表
         @Override
         public List<GroupMember> getGroupMembers(String groupId, boolean forceUpdate) throws RemoteException {
             ProtoGroupMember[] protoGroupMembers = ProtoLogic.getGroupMembers(groupId, forceUpdate);
@@ -1245,12 +1456,14 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return out;
         }
 
+        // 获取组成员
         @Override
         public GroupMember getGroupMember(String groupId, String memberId) throws RemoteException {
             ProtoGroupMember protoGroupMember = ProtoLogic.getGroupMember(groupId, memberId);
             return covertProtoGroupMember(protoGroupMember);
         }
 
+        // 转让群组
         @Override
         public void transferGroup(String groupId, String newOwner, int[] notifyLines, MessagePayload notifyMsg, final IGeneralCallback callback) throws RemoteException {
             ProtoLogic.transferGroup(groupId, newOwner, notifyLines, notifyMsg.toProtoContent(), new ProtoLogic.IGeneralCallback() {
@@ -1275,6 +1488,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         }
 
 
+        // 建立频道
         @Override
         public void createChannel(String channelId, String channelName, String channelPortrait, String desc, String extra, ICreateChannelCallback callback) throws RemoteException {
             ProtoLogic.createChannel(channelId, channelName, channelPortrait, 0, desc, extra, new ProtoLogic.ICreateChannelCallback() {
@@ -1298,16 +1512,19 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 修改频道信息
         @Override
         public void modifyChannelInfo(String channelId, int modifyType, String newValue, IGeneralCallback callback) throws RemoteException {
 
         }
 
+        // 获取频道信息
         @Override
         public ChannelInfo getChannelInfo(String channelId, boolean refresh) throws RemoteException {
             return converProtoChannelInfo(ProtoLogic.getChannelInfo(channelId, refresh));
         }
 
+        // 搜索频道
         @Override
         public void searchChannel(String keyword, ISearchChannelCallback callback) throws RemoteException {
             ProtoLogic.searchChannel(keyword, new ProtoLogic.ISearchChannelCallback() {
@@ -1337,11 +1554,13 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 收听频道
         @Override
         public boolean isListenedChannel(String channelId) throws RemoteException {
             return ProtoLogic.isListenedChannel(channelId);
         }
 
+        // 听频道
         @Override
         public void listenChannel(String channelId, boolean listen, IGeneralCallback callback) throws RemoteException {
             ProtoLogic.listenChannel(channelId, listen, new ProtoLogic.IGeneralCallback() {
@@ -1365,6 +1584,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 销毁频道
         @Override
         public void destoryChannel(String channelId, IGeneralCallback callback) throws RemoteException {
             ProtoLogic.destoryChannel(channelId, new ProtoLogic.IGeneralCallback() {
@@ -1388,6 +1608,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             });
         }
 
+        // 获取我的频道
         @Override
         public List<String> getMyChannels() throws RemoteException {
             List<String> out = new ArrayList<>();
@@ -1400,6 +1621,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
             return out;
         }
 
+        // 获取收听的频道
         @Override
         public List<String> getListenedChannels() throws RemoteException {
             List<String> out = new ArrayList<>();
@@ -1414,6 +1636,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
 
     }
 
+    // 转换原始频道信息
     private ChannelInfo converProtoChannelInfo(ProtoChannelInfo protoChannelInfo) {
         if (protoChannelInfo == null) {
             return null;
@@ -1431,6 +1654,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         return channelInfo;
     }
 
+    // 转换Proto群组信息
     private GroupInfo convertProtoGroupInfo(ProtoGroupInfo protoGroupInfo) {
         if (protoGroupInfo == null) {
             return null;
@@ -1447,6 +1671,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         return groupInfo;
     }
 
+    // 隐秘原型组成员
     private GroupMember covertProtoGroupMember(ProtoGroupMember protoGroupMember) {
         if (protoGroupMember == null) {
             return null;
@@ -1590,10 +1815,14 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         return super.onUnbind(intent);
     }
 
+    /**
+     * 创建服务
+     */
     @Override
     public void onCreate() {
         super.onCreate();
 
+        // 初始化协议
         initProto();
         try {
             mBinder.registerMessageContent(AddGroupMemberNotificationContent.class.getName());
@@ -1636,8 +1865,10 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         // Initialize the Mars PlatformComm
         Mars.init(getApplicationContext(), new Handler(Looper.getMainLooper()));
         Mars.onCreate(true);
+        // 记录log信息
         openXlog();
 
+        // 这里把连接状态注销
         mConnectionStatus = ConnectionStatusLogout;
 
         ProtoLogic.setUserInfoUpdateCallback(this);
@@ -1649,6 +1880,10 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         ProtoLogic.setFriendRequestListUpdateCallback(this);
     }
 
+    /**
+     * 服务onDestroy的时候
+     * 重置协议
+     */
     private void resetProto() {
         Mars.onDestroy();
         AppLogic.setCallBack(null);
@@ -1751,7 +1986,7 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
                     imei = UUID.randomUUID().toString();
                 }
                 imei += System.currentTimeMillis();
-                PreferenceManager.getDefaultSharedPreferences(context).edit().putString("mars_core_uid", imei).commit();
+                PreferenceManager.getDefaultSharedPreferences(context).edit().putString("mars_core_uid", imei).apply();
             }
             info = new AppLogic.DeviceInfo(imei);
             info.packagename = context.getPackageName();
@@ -1772,18 +2007,19 @@ public class ClientService extends Service implements SdtLogic.ICallBack,
         if (status == -4) {
             status = -1;
         }
-        int i = onConnectionStatusChangeListenes.beginBroadcast();
+        int i = onConnectionStatusChangeListeners.beginBroadcast();
         IOnConnectionStatusChangeListener listener;
         while (i > 0) {
             i--;
-            listener = onConnectionStatusChangeListenes.getBroadcastItem(i);
+            listener = onConnectionStatusChangeListeners.getBroadcastItem(i);
             try {
                 listener.onConnectionStatusChange(status);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
         }
-        onConnectionStatusChangeListenes.finishBroadcast();
+        // 结束广播
+        onConnectionStatusChangeListeners.finishBroadcast();
 
         if (mConnectionStatus == ConnectionStatusConnected && !TextUtils.isEmpty(mBackupDeviceToken)) {
             try {
